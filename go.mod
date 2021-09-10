@@ -21,7 +21,7 @@ require (
 	github.com/ipfs/go-block-format v0.0.2
 	github.com/ipfs/go-blockservice v0.1.4
 	github.com/ipfs/go-cid v0.0.7
-	github.com/ipfs/go-datastore v0.4.5
+	github.com/ipfs/go-datastore v0.4.6
 	github.com/ipfs/go-ipfs v0.8.0
 	github.com/ipfs/go-ipfs-api v0.2.0
 	github.com/ipfs/go-ipfs-blockstore v0.1.4
@@ -36,13 +36,13 @@ require (
 	github.com/lazyledger/nmt v0.5.0
 	github.com/lazyledger/rsmt2d v0.2.0
 	github.com/libp2p/go-buffer-pool v0.0.2
-	github.com/libp2p/go-libp2p v0.12.0
-	github.com/libp2p/go-libp2p-core v0.7.0
+	github.com/libp2p/go-libp2p v0.15.0
+	github.com/libp2p/go-libp2p-core v0.9.0
 	github.com/libp2p/go-libp2p-kad-dht v0.11.1
 	github.com/libp2p/go-libp2p-kbucket v0.4.7
 	github.com/minio/highwayhash v1.0.1
-	github.com/multiformats/go-multiaddr v0.3.1
-	github.com/multiformats/go-multihash v0.0.14
+	github.com/multiformats/go-multiaddr v0.4.0
+	github.com/multiformats/go-multihash v0.0.15
 	github.com/petermattis/goid v0.0.0-20180202154549-b0b1615b78e5 // indirect
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.11.0
@@ -54,9 +54,9 @@ require (
 	github.com/spf13/viper v1.8.0
 	github.com/stretchr/testify v1.7.0
 	github.com/syndtr/goleveldb v1.0.1-0.20200815110645-5c35d600f0ca // indirect
-	golang.org/x/crypto v0.0.0-20210322153248-0c34fe9e7dc2
-	golang.org/x/net v0.0.0-20210405180319-a5a99cb37ef4
-	google.golang.org/grpc v1.39.0
+	golang.org/x/crypto v0.0.0-20210813211128-0a44fdfbc16e
+	golang.org/x/net v0.0.0-20210813160813-60bc85c4be6d
+	google.golang.org/grpc v1.40.0
 )
 
 replace (
