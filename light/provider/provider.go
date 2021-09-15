@@ -3,7 +3,7 @@ package provider
 import (
 	"context"
 
-	"github.com/lazyledger/lazyledger-core/types"
+	"github.com/celestiaorg/celestia-core/types"
 )
 
 // Provider provides information for the light client to sync (verification
@@ -20,13 +20,6 @@ type Provider interface {
 	// If there's no LightBlock for the given height, ErrLightBlockNotFound
 	// error is returned.
 	LightBlock(ctx context.Context, height int64) (*types.LightBlock, error)
-
-	// DASLightBlock returns the LightBlock containing the DataAvailabilityHeader.
-	// Other than including the DataAvailabilityHeader it behaves exactly the same
-	// as LightBlock.
-	//
-	// It can be used by DAS light clients.
-	DASLightBlock(ctx context.Context, height int64) (*types.LightBlock, error)
 
 	// ReportEvidence reports an evidence of misbehavior.
 	ReportEvidence(context.Context, types.Evidence) error

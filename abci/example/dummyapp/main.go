@@ -6,17 +6,16 @@ import (
 	"path/filepath"
 	"time"
 
-	dummy "github.com/lazyledger/lazyledger-core/abci/example/dummyapp/app"
-	cmd "github.com/lazyledger/lazyledger-core/cmd/tendermint/commands"
-	"github.com/lazyledger/lazyledger-core/cmd/tendermint/commands/debug"
-	cfg "github.com/lazyledger/lazyledger-core/config"
-	"github.com/lazyledger/lazyledger-core/ipfs"
-	"github.com/lazyledger/lazyledger-core/libs/cli"
-	"github.com/lazyledger/lazyledger-core/libs/log"
-	"github.com/lazyledger/lazyledger-core/node"
-	"github.com/lazyledger/lazyledger-core/p2p"
-	"github.com/lazyledger/lazyledger-core/privval"
-	"github.com/lazyledger/lazyledger-core/proxy"
+	dummy "github.com/celestiaorg/celestia-core/abci/example/dummyapp/app"
+	cmd "github.com/celestiaorg/celestia-core/cmd/tendermint/commands"
+	"github.com/celestiaorg/celestia-core/cmd/tendermint/commands/debug"
+	cfg "github.com/celestiaorg/celestia-core/config"
+	"github.com/celestiaorg/celestia-core/libs/cli"
+	"github.com/celestiaorg/celestia-core/libs/log"
+	"github.com/celestiaorg/celestia-core/node"
+	"github.com/celestiaorg/celestia-core/p2p"
+	"github.com/celestiaorg/celestia-core/privval"
+	"github.com/celestiaorg/celestia-core/proxy"
 )
 
 var (
@@ -78,7 +77,7 @@ func main() {
 }
 
 // DummyNode implements NodeProvider.
-func DummyNode(config *cfg.Config, provider ipfs.NodeProvider, logger log.Logger) (*node.Node, error) {
+func DummyNode(config *cfg.Config, logger log.Logger) (*node.Node, error) {
 	nodeKey, err := p2p.LoadOrGenNodeKey(config.NodeKeyFile())
 	if err != nil {
 		return nil, fmt.Errorf("failed to load or gen node key %s: %w", config.NodeKeyFile(), err)
@@ -99,7 +98,6 @@ func DummyNode(config *cfg.Config, provider ipfs.NodeProvider, logger log.Logger
 		proxy.NewLocalClientCreator(app),
 		node.DefaultGenesisDocProviderFunc(config),
 		node.DefaultDBProvider,
-		provider,
 		node.DefaultMetricsProvider(config.Instrumentation),
 		logger,
 	)

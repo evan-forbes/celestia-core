@@ -2,7 +2,6 @@ package consensus
 
 import (
 	"bytes"
-	"context"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -12,26 +11,23 @@ import (
 	"time"
 
 	"github.com/gogo/protobuf/proto"
-	format "github.com/ipfs/go-ipld-format"
-	"github.com/libp2p/go-libp2p-core/routing"
 
-	cfg "github.com/lazyledger/lazyledger-core/config"
-	cstypes "github.com/lazyledger/lazyledger-core/consensus/types"
-	"github.com/lazyledger/lazyledger-core/crypto"
-	tmevents "github.com/lazyledger/lazyledger-core/libs/events"
-	"github.com/lazyledger/lazyledger-core/libs/fail"
-	tmjson "github.com/lazyledger/lazyledger-core/libs/json"
-	"github.com/lazyledger/lazyledger-core/libs/log"
-	tmmath "github.com/lazyledger/lazyledger-core/libs/math"
-	tmos "github.com/lazyledger/lazyledger-core/libs/os"
-	"github.com/lazyledger/lazyledger-core/libs/service"
-	tmsync "github.com/lazyledger/lazyledger-core/libs/sync"
-	"github.com/lazyledger/lazyledger-core/p2p"
-	"github.com/lazyledger/lazyledger-core/p2p/ipld"
-	tmproto "github.com/lazyledger/lazyledger-core/proto/tendermint/types"
-	sm "github.com/lazyledger/lazyledger-core/state"
-	"github.com/lazyledger/lazyledger-core/types"
-	tmtime "github.com/lazyledger/lazyledger-core/types/time"
+	cfg "github.com/celestiaorg/celestia-core/config"
+	cstypes "github.com/celestiaorg/celestia-core/consensus/types"
+	"github.com/celestiaorg/celestia-core/crypto"
+	tmevents "github.com/celestiaorg/celestia-core/libs/events"
+	"github.com/celestiaorg/celestia-core/libs/fail"
+	tmjson "github.com/celestiaorg/celestia-core/libs/json"
+	"github.com/celestiaorg/celestia-core/libs/log"
+	tmmath "github.com/celestiaorg/celestia-core/libs/math"
+	tmos "github.com/celestiaorg/celestia-core/libs/os"
+	"github.com/celestiaorg/celestia-core/libs/service"
+	tmsync "github.com/celestiaorg/celestia-core/libs/sync"
+	"github.com/celestiaorg/celestia-core/p2p"
+	tmproto "github.com/celestiaorg/celestia-core/proto/tendermint/types"
+	sm "github.com/celestiaorg/celestia-core/state"
+	"github.com/celestiaorg/celestia-core/types"
+	tmtime "github.com/celestiaorg/celestia-core/types/time"
 )
 
 //-----------------------------------------------------------------------------
@@ -96,9 +92,6 @@ type State struct {
 	// store blocks and commits
 	blockStore sm.BlockStore
 
-	dag    format.DAGService
-	croute routing.ContentRouting
-
 	// create and execute blocks
 	blockExec *sm.BlockExecutor
 
@@ -154,10 +147,6 @@ type State struct {
 
 	// for reporting metrics
 	metrics *Metrics
-
-	// context of the recent proposed block
-	proposalCtx    context.Context
-	proposalCancel context.CancelFunc
 }
 
 // StateOption sets an optional parameter on the State.
@@ -170,8 +159,6 @@ func NewState(
 	blockExec *sm.BlockExecutor,
 	blockStore sm.BlockStore,
 	txNotifier txNotifier,
-	dag format.DAGService,
-	croute routing.ContentRouting,
 	evpool evidencePool,
 	options ...StateOption,
 ) *State {
@@ -179,8 +166,6 @@ func NewState(
 		config:           config,
 		blockExec:        blockExec,
 		blockStore:       blockStore,
-		dag:              dag,
-		croute:           croute,
 		txNotifier:       txNotifier,
 		peerMsgQueue:     make(chan msgInfo, msgQueueSize),
 		internalMsgQueue: make(chan msgInfo, msgQueueSize),
@@ -1099,12 +1084,8 @@ func (cs *State) defaultDecideProposal(height int64, round int32) {
 
 	// Make proposal
 	propBlockID := types.BlockID{Hash: block.Hash(), PartSetHeader: blockParts.Header()}
-	proposal := types.NewProposal(height, round, cs.ValidRound, propBlockID, &block.DataAvailabilityHeader)
-	p, err := proposal.ToProto()
-	if err != nil {
-		cs.Logger.Error(fmt.Sprintf("can't serialize proposal: %s", err.Error()))
-		return
-	}
+	proposal := types.NewProposal(height, round, cs.ValidRound, propBlockID)
+	p := proposal.ToProto()
 
 	if err := cs.privValidator.SignProposal(cs.state.ChainID, p); err == nil {
 		proposal.Signature = p.Signature
@@ -1120,41 +1101,6 @@ func (cs *State) defaultDecideProposal(height int64, round int32) {
 	} else if !cs.replayMode {
 		cs.Logger.Error("enterPropose: Error signing proposal", "height", height, "round", round, "err", err)
 	}
-
-	// cancel ctx for previous proposal block to ensure block putting/providing does not queues up
-	if cs.proposalCancel != nil {
-		// FIXME(ismail): below commented out cancel tries to prevent block putting
-		// and providing no to queue up endlessly.
-		// But in a real network proposers should have enough time in between.
-		// And even if not, queuing up to a problematic extent will take a lot of time:
-		// Even on the Cosmos Hub the largest validator only proposes every 15 blocks.
-		// With an average block time of roughly 7.5 seconds this means almost
-		// two minutes between two different proposals by the same validator.
-		// For other validators much more time passes in between.
-		// In our case block interval times will likely be larger.
-		// And independent of this DHT providing will be made faster:
-		//  - https://github.com/lazyledger/lazyledger-core/issues/395
-		//
-		// Furthermore, and independent of all of the above,
-		// the provide timeout could still be larger than just the time between
-		// two consecutive proposals.
-		//
-		cs.proposalCancel()
-	}
-	cs.proposalCtx, cs.proposalCancel = context.WithCancel(context.TODO())
-	go func(ctx context.Context) {
-		cs.Logger.Info("Putting Block to IPFS", "height", block.Height)
-		err = ipld.PutBlock(ctx, cs.dag, block, cs.croute, cs.Logger)
-		if err != nil {
-			if errors.Is(err, context.Canceled) {
-				cs.Logger.Error("Putting Block didn't finish in time and was terminated", "height", block.Height)
-				return
-			}
-			cs.Logger.Error("Failed to put Block to IPFS", "err", err, "height", block.Height)
-			return
-		}
-		cs.Logger.Info("Finished putting block to IPFS", "height", block.Height)
-	}(cs.proposalCtx)
 }
 
 // Returns true if the proposal block is complete &&
@@ -1585,10 +1531,7 @@ func (cs *State) finalizeCommit(height int64) {
 		// but may differ from the LastCommit included in the next block
 		precommits := cs.Votes.Precommits(cs.CommitRound)
 		seenCommit := precommits.MakeCommit()
-		err := cs.blockStore.SaveBlock(context.TODO(), block, blockParts, seenCommit)
-		if err != nil {
-			panic(err)
-		}
+		cs.blockStore.SaveBlock(block, blockParts, seenCommit)
 	} else {
 		// Happens during replay if we already saved the block but didn't commit
 		cs.Logger.Info("Calling finalizeCommit on already stored block", "height", block.Height)
@@ -1792,10 +1735,7 @@ func (cs *State) defaultSetProposal(proposal *types.Proposal) error {
 		return ErrInvalidProposalPOLRound
 	}
 
-	p, err := proposal.ToProto()
-	if err != nil {
-		return err
-	}
+	p := proposal.ToProto()
 
 	// Verify signature
 	if !cs.Validators.GetProposer().PubKey.VerifySignature(
@@ -1950,7 +1890,7 @@ func (cs *State) tryAddVote(vote *types.Vote, peerID p2p.ID) (bool, error) {
 			// 1) bad peer OR
 			// 2) not a bad peer? this can also err sometimes with "Unexpected step" OR
 			// 3) tmkms use with multiple validators connecting to a single tmkms instance
-			// 		(https://github.com/lazyledger/lazyledger-core/issues/3839).
+			// 		(https://github.com/tendermint/tendermint/issues/3839).
 			cs.Logger.Info("Error attempting to add vote", "err", err)
 			return added, ErrAddingVote
 		}

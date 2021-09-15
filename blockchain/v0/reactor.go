@@ -1,18 +1,17 @@
 package v0
 
 import (
-	"context"
 	"fmt"
 	"reflect"
 	"time"
 
-	bc "github.com/lazyledger/lazyledger-core/blockchain"
-	"github.com/lazyledger/lazyledger-core/libs/log"
-	"github.com/lazyledger/lazyledger-core/p2p"
-	bcproto "github.com/lazyledger/lazyledger-core/proto/tendermint/blockchain"
-	sm "github.com/lazyledger/lazyledger-core/state"
-	"github.com/lazyledger/lazyledger-core/store"
-	"github.com/lazyledger/lazyledger-core/types"
+	bc "github.com/celestiaorg/celestia-core/blockchain"
+	"github.com/celestiaorg/celestia-core/libs/log"
+	"github.com/celestiaorg/celestia-core/p2p"
+	bcproto "github.com/celestiaorg/celestia-core/proto/tendermint/blockchain"
+	sm "github.com/celestiaorg/celestia-core/state"
+	"github.com/celestiaorg/celestia-core/store"
+	"github.com/celestiaorg/celestia-core/types"
 )
 
 const (
@@ -179,10 +178,7 @@ func (bcR *BlockchainReactor) RemovePeer(peer p2p.Peer, reason interface{}) {
 func (bcR *BlockchainReactor) respondToPeer(msg *bcproto.BlockRequest,
 	src p2p.Peer) (queued bool) {
 
-	block, err := bcR.store.LoadBlock(context.TODO(), msg.Height)
-	if err != nil {
-		panic(err)
-	}
+	block := bcR.store.LoadBlock(msg.Height)
 	if block != nil {
 		bl, err := block.ToProto()
 		if err != nil {
@@ -422,14 +418,11 @@ FOR_LOOP:
 				bcR.pool.PopRequest()
 
 				// TODO: batch saves so we dont persist to disk every block
-				err := bcR.store.SaveBlock(context.TODO(), first, firstParts, second.LastCommit)
-				if err != nil {
-					// an error is only returned if something with the local IPFS blockstore is seriously wrong
-					panic(err)
-				}
+				bcR.store.SaveBlock(first, firstParts, second.LastCommit)
 
 				// TODO: same thing for app - but we would need a way to get the hash
 				// without persisting the state.
+				var err error
 				state, _, err = bcR.blockExec.ApplyBlock(state, firstID, first)
 				if err != nil {
 					// TODO This is bad, are we zombie?

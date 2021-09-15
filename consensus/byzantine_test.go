@@ -9,26 +9,22 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ipfs/go-blockservice"
-	offline "github.com/ipfs/go-ipfs-exchange-offline"
-	"github.com/ipfs/go-merkledag"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	abcicli "github.com/lazyledger/lazyledger-core/abci/client"
-	abci "github.com/lazyledger/lazyledger-core/abci/types"
-	"github.com/lazyledger/lazyledger-core/evidence"
-	"github.com/lazyledger/lazyledger-core/ipfs"
-	"github.com/lazyledger/lazyledger-core/libs/db/memdb"
-	"github.com/lazyledger/lazyledger-core/libs/log"
-	"github.com/lazyledger/lazyledger-core/libs/service"
-	tmsync "github.com/lazyledger/lazyledger-core/libs/sync"
-	mempl "github.com/lazyledger/lazyledger-core/mempool"
-	"github.com/lazyledger/lazyledger-core/p2p"
-	tmproto "github.com/lazyledger/lazyledger-core/proto/tendermint/types"
-	sm "github.com/lazyledger/lazyledger-core/state"
-	"github.com/lazyledger/lazyledger-core/store"
-	"github.com/lazyledger/lazyledger-core/types"
+	abcicli "github.com/celestiaorg/celestia-core/abci/client"
+	abci "github.com/celestiaorg/celestia-core/abci/types"
+	"github.com/celestiaorg/celestia-core/evidence"
+	"github.com/celestiaorg/celestia-core/libs/db/memdb"
+	"github.com/celestiaorg/celestia-core/libs/log"
+	"github.com/celestiaorg/celestia-core/libs/service"
+	tmsync "github.com/celestiaorg/celestia-core/libs/sync"
+	mempl "github.com/celestiaorg/celestia-core/mempool"
+	"github.com/celestiaorg/celestia-core/p2p"
+	tmproto "github.com/celestiaorg/celestia-core/proto/tendermint/types"
+	sm "github.com/celestiaorg/celestia-core/state"
+	"github.com/celestiaorg/celestia-core/store"
+	"github.com/celestiaorg/celestia-core/types"
 )
 
 //----------------------------------------------
@@ -59,9 +55,7 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 		app.InitChain(abci.RequestInitChain{Validators: vals})
 
 		blockDB := memdb.NewDB()
-		bs := ipfs.MockBlockStore()
-		dag := merkledag.NewDAGService(blockservice.New(bs, offline.Exchange(bs)))
-		blockStore := store.NewBlockStore(blockDB, bs, log.TestingLogger())
+		blockStore := store.NewBlockStore(blockDB)
 
 		// one for mempool, one for consensus
 		mtx := new(tmsync.Mutex)
@@ -84,7 +78,7 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 		// Make State
 		blockExec := sm.NewBlockExecutor(stateStore, log.TestingLogger(), proxyAppConnCon, mempool, evpool)
 		cs := NewState(thisConfig.Consensus, state, blockExec, blockStore,
-			mempool, dag, ipfs.MockRouting(), evpool)
+			mempool, evpool)
 		cs.SetLogger(cs.Logger)
 		// set private validator
 		pv := privVals[i]
@@ -386,9 +380,8 @@ func byzantineDecideProposalFunc(t *testing.T, height int64, round int32, cs *St
 	// Create a new proposal block from state/txs from the mempool.
 	block1, blockParts1 := cs.createProposalBlock()
 	polRound, propBlockID := cs.ValidRound, types.BlockID{Hash: block1.Hash(), PartSetHeader: blockParts1.Header()}
-	proposal1 := types.NewProposal(height, round, polRound, propBlockID, &block1.DataAvailabilityHeader)
-	p1, err := proposal1.ToProto()
-	require.NoError(t, err)
+	proposal1 := types.NewProposal(height, round, polRound, propBlockID)
+	p1 := proposal1.ToProto()
 	if err := cs.privValidator.SignProposal(cs.state.ChainID, p1); err != nil {
 		t.Error(err)
 	}
@@ -401,9 +394,8 @@ func byzantineDecideProposalFunc(t *testing.T, height int64, round int32, cs *St
 	// Create a new proposal block from state/txs from the mempool.
 	block2, blockParts2 := cs.createProposalBlock()
 	polRound, propBlockID = cs.ValidRound, types.BlockID{Hash: block2.Hash(), PartSetHeader: blockParts2.Header()}
-	proposal2 := types.NewProposal(height, round, polRound, propBlockID, &block2.DataAvailabilityHeader)
-	p2, err := proposal2.ToProto()
-	require.NoError(t, err)
+	proposal2 := types.NewProposal(height, round, polRound, propBlockID)
+	p2 := proposal2.ToProto()
 	if err := cs.privValidator.SignProposal(cs.state.ChainID, p2); err != nil {
 		t.Error(err)
 	}

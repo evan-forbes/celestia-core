@@ -3,8 +3,8 @@ package types
 import (
 	"time"
 
-	tmproto "github.com/lazyledger/lazyledger-core/proto/tendermint/types"
-	tmtime "github.com/lazyledger/lazyledger-core/types/time"
+	tmproto "github.com/celestiaorg/celestia-core/proto/tendermint/types"
+	tmtime "github.com/celestiaorg/celestia-core/types/time"
 )
 
 // Canonical* wraps the structs in types for amino encoding them for use in SignBytes / the Signable interface.
@@ -48,7 +48,6 @@ func CanonicalizeProposal(chainID string, proposal *tmproto.Proposal) tmproto.Ca
 		BlockID:   CanonicalizeBlockID(proposal.BlockID),
 		Timestamp: proposal.Timestamp,
 		ChainID:   chainID,
-		DAHeader:  proposal.DAHeader,
 	}
 }
 

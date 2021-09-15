@@ -14,27 +14,25 @@ import (
 	"time"
 
 	"github.com/gogo/protobuf/proto"
-	format "github.com/ipfs/go-ipld-format"
-	mdutils "github.com/ipfs/go-merkledag/test"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/lazyledger/lazyledger-core/abci/example/kvstore"
-	abci "github.com/lazyledger/lazyledger-core/abci/types"
-	cfg "github.com/lazyledger/lazyledger-core/config"
-	"github.com/lazyledger/lazyledger-core/crypto"
-	cryptoenc "github.com/lazyledger/lazyledger-core/crypto/encoding"
-	dbm "github.com/lazyledger/lazyledger-core/libs/db"
-	"github.com/lazyledger/lazyledger-core/libs/db/memdb"
-	"github.com/lazyledger/lazyledger-core/libs/log"
-	tmrand "github.com/lazyledger/lazyledger-core/libs/rand"
-	mempl "github.com/lazyledger/lazyledger-core/mempool"
-	"github.com/lazyledger/lazyledger-core/privval"
-	tmstate "github.com/lazyledger/lazyledger-core/proto/tendermint/state"
-	tmproto "github.com/lazyledger/lazyledger-core/proto/tendermint/types"
-	"github.com/lazyledger/lazyledger-core/proxy"
-	sm "github.com/lazyledger/lazyledger-core/state"
-	"github.com/lazyledger/lazyledger-core/types"
+	"github.com/celestiaorg/celestia-core/abci/example/kvstore"
+	abci "github.com/celestiaorg/celestia-core/abci/types"
+	cfg "github.com/celestiaorg/celestia-core/config"
+	"github.com/celestiaorg/celestia-core/crypto"
+	cryptoenc "github.com/celestiaorg/celestia-core/crypto/encoding"
+	dbm "github.com/celestiaorg/celestia-core/libs/db"
+	"github.com/celestiaorg/celestia-core/libs/db/memdb"
+	"github.com/celestiaorg/celestia-core/libs/log"
+	tmrand "github.com/celestiaorg/celestia-core/libs/rand"
+	mempl "github.com/celestiaorg/celestia-core/mempool"
+	"github.com/celestiaorg/celestia-core/privval"
+	tmstate "github.com/celestiaorg/celestia-core/proto/tendermint/state"
+	tmproto "github.com/celestiaorg/celestia-core/proto/tendermint/types"
+	"github.com/celestiaorg/celestia-core/proxy"
+	sm "github.com/celestiaorg/celestia-core/state"
+	"github.com/celestiaorg/celestia-core/types"
 )
 
 func TestMain(m *testing.M) {
@@ -131,7 +129,8 @@ func TestWALCrash(t *testing.T) {
 		heightToStop int64
 	}{
 		{"empty block",
-			func(stateDB dbm.DB, cs *State, ctx context.Context) {},
+			func(stateDB dbm.DB, cs *State, ctx context.Context) {
+			},
 			1},
 		{"many non-empty blocks",
 			func(stateDB dbm.DB, cs *State, ctx context.Context) {
@@ -372,9 +371,8 @@ func TestSimulateValidatorsChange(t *testing.T) {
 	propBlockParts := propBlock.MakePartSet(partSize)
 	blockID := types.BlockID{Hash: propBlock.Hash(), PartSetHeader: propBlockParts.Header()}
 
-	proposal := types.NewProposal(vss[1].Height, round, -1, blockID, &propBlock.DataAvailabilityHeader)
-	p, err := proposal.ToProto()
-	require.NoError(t, err)
+	proposal := types.NewProposal(vss[1].Height, round, -1, blockID)
+	p := proposal.ToProto()
 	if err := vss[1].SignProposal(config.ChainID(), p); err != nil {
 		t.Fatal("failed to sign bad proposal", err)
 	}
@@ -403,9 +401,8 @@ func TestSimulateValidatorsChange(t *testing.T) {
 	propBlockParts = propBlock.MakePartSet(partSize)
 	blockID = types.BlockID{Hash: propBlock.Hash(), PartSetHeader: propBlockParts.Header()}
 
-	proposal = types.NewProposal(vss[2].Height, round, -1, blockID, &propBlock.DataAvailabilityHeader)
-	p, err = proposal.ToProto()
-	require.NoError(t, err)
+	proposal = types.NewProposal(vss[2].Height, round, -1, blockID)
+	p = proposal.ToProto()
 	if err := vss[2].SignProposal(config.ChainID(), p); err != nil {
 		t.Fatal("failed to sign bad proposal", err)
 	}
@@ -461,9 +458,8 @@ func TestSimulateValidatorsChange(t *testing.T) {
 
 	selfIndex := valIndexFn(0)
 
-	proposal = types.NewProposal(vss[3].Height, round, -1, blockID, &propBlock.DataAvailabilityHeader)
-	p, err = proposal.ToProto()
-	require.NoError(t, err)
+	proposal = types.NewProposal(vss[3].Height, round, -1, blockID)
+	p = proposal.ToProto()
 	if err := vss[3].SignProposal(config.ChainID(), p); err != nil {
 		t.Fatal("failed to sign bad proposal", err)
 	}
@@ -521,9 +517,8 @@ func TestSimulateValidatorsChange(t *testing.T) {
 	sort.Sort(ValidatorStubsByPower(newVss))
 
 	selfIndex = valIndexFn(0)
-	proposal = types.NewProposal(vss[1].Height, round, -1, blockID, &propBlock.DataAvailabilityHeader)
-	p, err = proposal.ToProto()
-	require.NoError(t, err)
+	proposal = types.NewProposal(vss[1].Height, round, -1, blockID)
+	p = proposal.ToProto()
 	if err := vss[1].SignProposal(config.ChainID(), p); err != nil {
 		t.Fatal("failed to sign bad proposal", err)
 	}
@@ -546,9 +541,7 @@ func TestSimulateValidatorsChange(t *testing.T) {
 	sim.Chain = make([]*types.Block, 0)
 	sim.Commits = make([]*types.Commit, 0)
 	for i := 1; i <= numBlocks; i++ {
-		blck, err := css[0].blockStore.LoadBlock(context.TODO(), int64(i))
-		require.NoError(t, err)
-		sim.Chain = append(sim.Chain, blck)
+		sim.Chain = append(sim.Chain, css[0].blockStore.LoadBlock(int64(i)))
 		sim.Commits = append(sim.Commits, css[0].blockStore.LoadBlockCommit(int64(i)))
 	}
 }
@@ -1182,28 +1175,25 @@ func stateAndStore(
 // mock block store
 
 type mockBlockStore struct {
-	config     *cfg.Config
-	params     tmproto.ConsensusParams
-	chain      []*types.Block
-	commits    []*types.Commit
-	base       int64
-	ipfsDagAPI format.DAGService
+	config  *cfg.Config
+	params  tmproto.ConsensusParams
+	chain   []*types.Block
+	commits []*types.Commit
+	base    int64
 }
 
 // TODO: NewBlockStore(db.NewMemDB) ...
 func newMockBlockStore(config *cfg.Config, params tmproto.ConsensusParams) *mockBlockStore {
-	return &mockBlockStore{config, params, nil, nil, 0, mdutils.Mock()}
+	return &mockBlockStore{config, params, nil, nil, 0}
 }
 
-func (bs *mockBlockStore) Height() int64                  { return int64(len(bs.chain)) }
-func (bs *mockBlockStore) Base() int64                    { return bs.base }
-func (bs *mockBlockStore) Size() int64                    { return bs.Height() - bs.Base() + 1 }
-func (bs *mockBlockStore) LoadBaseMeta() *types.BlockMeta { return bs.LoadBlockMeta(bs.base) }
-func (bs *mockBlockStore) LoadBlock(ctx context.Context, height int64) (*types.Block, error) {
-	return bs.chain[height-1], nil
-}
-func (bs *mockBlockStore) LoadBlockByHash(ctx context.Context, hash []byte) (*types.Block, error) {
-	return bs.chain[int64(len(bs.chain))-1], nil
+func (bs *mockBlockStore) Height() int64                       { return int64(len(bs.chain)) }
+func (bs *mockBlockStore) Base() int64                         { return bs.base }
+func (bs *mockBlockStore) Size() int64                         { return bs.Height() - bs.Base() + 1 }
+func (bs *mockBlockStore) LoadBaseMeta() *types.BlockMeta      { return bs.LoadBlockMeta(bs.base) }
+func (bs *mockBlockStore) LoadBlock(height int64) *types.Block { return bs.chain[height-1] }
+func (bs *mockBlockStore) LoadBlockByHash(hash []byte) *types.Block {
+	return bs.chain[int64(len(bs.chain))-1]
 }
 func (bs *mockBlockStore) LoadBlockMeta(height int64) *types.BlockMeta {
 	block := bs.chain[height-1]
@@ -1213,13 +1203,7 @@ func (bs *mockBlockStore) LoadBlockMeta(height int64) *types.BlockMeta {
 	}
 }
 func (bs *mockBlockStore) LoadBlockPart(height int64, index int) *types.Part { return nil }
-func (bs *mockBlockStore) SaveBlock(
-	ctx context.Context,
-	block *types.Block,
-	blockParts *types.PartSet,
-	seenCommit *types.Commit,
-) error {
-	return nil
+func (bs *mockBlockStore) SaveBlock(block *types.Block, blockParts *types.PartSet, seenCommit *types.Commit) {
 }
 func (bs *mockBlockStore) LoadBlockCommit(height int64) *types.Commit {
 	return bs.commits[height-1]

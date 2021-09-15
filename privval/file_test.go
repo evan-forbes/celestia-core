@@ -11,13 +11,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/lazyledger/lazyledger-core/crypto/ed25519"
-	"github.com/lazyledger/lazyledger-core/crypto/tmhash"
-	tmjson "github.com/lazyledger/lazyledger-core/libs/json"
-	tmrand "github.com/lazyledger/lazyledger-core/libs/rand"
-	tmproto "github.com/lazyledger/lazyledger-core/proto/tendermint/types"
-	"github.com/lazyledger/lazyledger-core/types"
-	tmtime "github.com/lazyledger/lazyledger-core/types/time"
+	"github.com/celestiaorg/celestia-core/crypto/ed25519"
+	"github.com/celestiaorg/celestia-core/crypto/tmhash"
+	tmjson "github.com/celestiaorg/celestia-core/libs/json"
+	tmrand "github.com/celestiaorg/celestia-core/libs/rand"
+	tmproto "github.com/celestiaorg/celestia-core/proto/tendermint/types"
+	"github.com/celestiaorg/celestia-core/types"
+	tmtime "github.com/celestiaorg/celestia-core/types/time"
 )
 
 func TestGenLoadValidator(t *testing.T) {
@@ -236,8 +236,7 @@ func TestSignProposal(t *testing.T) {
 
 	// sign a proposal for first time
 	proposal := newProposal(height, round, block1)
-	pbp, err := proposal.ToProto()
-	require.NoError(t, err)
+	pbp := proposal.ToProto()
 	err = privVal.SignProposal("mychainid", pbp)
 	assert.NoError(err, "expected no error signing proposal")
 
@@ -254,8 +253,7 @@ func TestSignProposal(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		p, err := c.ToProto()
-		require.NoError(t, err)
+		p := c.ToProto()
 		err = privVal.SignProposal("mychainid", p)
 		assert.Error(err, "expected error on signing conflicting proposal")
 	}
@@ -284,8 +282,7 @@ func TestDifferByTimestamp(t *testing.T) {
 	// test proposal
 	{
 		proposal := newProposal(height, round, block1)
-		pb, err := proposal.ToProto()
-		require.NoError(t, err)
+		pb := proposal.ToProto()
 		err = privVal.SignProposal(chainID, pb)
 		assert.NoError(t, err, "expected no error signing proposal")
 		signBytes := types.ProposalSignBytes(chainID, pb)
@@ -350,6 +347,5 @@ func newProposal(height int64, round int32, blockID types.BlockID) *types.Propos
 		Round:     round,
 		BlockID:   blockID,
 		Timestamp: tmtime.Now(),
-		DAHeader:  &types.DataAvailabilityHeader{},
 	}
 }

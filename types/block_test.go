@@ -1,15 +1,11 @@
 package types
 
 import (
-	// it is ok to use math/rand here: we do not need a cryptographically secure random
-	// number generator here and we can run the tests a bit faster
-	stdbytes "bytes"
 	"encoding/hex"
 	"math"
 	mrand "math/rand"
 	"os"
 	"reflect"
-	"sort"
 	"testing"
 	"time"
 
@@ -17,17 +13,17 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/lazyledger/lazyledger-core/crypto"
-	"github.com/lazyledger/lazyledger-core/crypto/merkle"
-	"github.com/lazyledger/lazyledger-core/crypto/tmhash"
-	"github.com/lazyledger/lazyledger-core/libs/bits"
-	"github.com/lazyledger/lazyledger-core/libs/bytes"
-	tmrand "github.com/lazyledger/lazyledger-core/libs/rand"
-	tmproto "github.com/lazyledger/lazyledger-core/proto/tendermint/types"
-	tmversion "github.com/lazyledger/lazyledger-core/proto/tendermint/version"
-	"github.com/lazyledger/lazyledger-core/types/consts"
-	tmtime "github.com/lazyledger/lazyledger-core/types/time"
-	"github.com/lazyledger/lazyledger-core/version"
+	"github.com/celestiaorg/celestia-core/crypto"
+	"github.com/celestiaorg/celestia-core/crypto/merkle"
+	"github.com/celestiaorg/celestia-core/crypto/tmhash"
+	"github.com/celestiaorg/celestia-core/libs/bits"
+	"github.com/celestiaorg/celestia-core/libs/bytes"
+	tmrand "github.com/celestiaorg/celestia-core/libs/rand"
+	"github.com/celestiaorg/celestia-core/pkg/consts"
+	tmproto "github.com/celestiaorg/celestia-core/proto/tendermint/types"
+	tmversion "github.com/celestiaorg/celestia-core/proto/tendermint/version"
+	tmtime "github.com/celestiaorg/celestia-core/types/time"
+	"github.com/celestiaorg/celestia-core/version"
 )
 
 func TestMain(m *testing.M) {
@@ -1395,33 +1391,4 @@ func TestNextHighestPowerOf2(t *testing.T) {
 		res := nextHighestPowerOf2(tt.input)
 		assert.Equal(t, tt.expected, res)
 	}
-}
-
-// this code is copy pasted from the plugin, and should likely be exported in the plugin instead
-func generateRandNamespacedRawData(total int, nidSize int, leafSize int) [][]byte {
-	data := make([][]byte, total)
-	for i := 0; i < total; i++ {
-		nid := make([]byte, nidSize)
-		_, err := mrand.Read(nid)
-		if err != nil {
-			panic(err)
-		}
-		data[i] = nid
-	}
-
-	sortByteArrays(data)
-	for i := 0; i < total; i++ {
-		d := make([]byte, leafSize)
-		_, err := mrand.Read(d)
-		if err != nil {
-			panic(err)
-		}
-		data[i] = append(data[i], d...)
-	}
-
-	return data
-}
-
-func sortByteArrays(src [][]byte) {
-	sort.Slice(src, func(i, j int) bool { return stdbytes.Compare(src[i], src[j]) < 0 })
 }

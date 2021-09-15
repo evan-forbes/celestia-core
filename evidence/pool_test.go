@@ -1,7 +1,6 @@
 package evidence_test
 
 import (
-	"context"
 	"os"
 	"testing"
 	"time"
@@ -10,18 +9,18 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	"github.com/lazyledger/lazyledger-core/evidence"
-	"github.com/lazyledger/lazyledger-core/evidence/mocks"
-	dbm "github.com/lazyledger/lazyledger-core/libs/db"
-	"github.com/lazyledger/lazyledger-core/libs/db/memdb"
-	"github.com/lazyledger/lazyledger-core/libs/log"
-	tmproto "github.com/lazyledger/lazyledger-core/proto/tendermint/types"
-	tmversion "github.com/lazyledger/lazyledger-core/proto/tendermint/version"
-	sm "github.com/lazyledger/lazyledger-core/state"
-	smmocks "github.com/lazyledger/lazyledger-core/state/mocks"
-	"github.com/lazyledger/lazyledger-core/store"
-	"github.com/lazyledger/lazyledger-core/types"
-	"github.com/lazyledger/lazyledger-core/version"
+	"github.com/celestiaorg/celestia-core/evidence"
+	"github.com/celestiaorg/celestia-core/evidence/mocks"
+	dbm "github.com/celestiaorg/celestia-core/libs/db"
+	"github.com/celestiaorg/celestia-core/libs/db/memdb"
+	"github.com/celestiaorg/celestia-core/libs/log"
+	tmproto "github.com/celestiaorg/celestia-core/proto/tendermint/types"
+	tmversion "github.com/celestiaorg/celestia-core/proto/tendermint/version"
+	sm "github.com/celestiaorg/celestia-core/state"
+	smmocks "github.com/celestiaorg/celestia-core/state/mocks"
+	"github.com/celestiaorg/celestia-core/store"
+	"github.com/celestiaorg/celestia-core/types"
+	"github.com/celestiaorg/celestia-core/version"
 )
 
 func TestMain(m *testing.M) {
@@ -396,7 +395,7 @@ func initializeValidatorState(privVal types.PrivValidator, height int64) sm.Stor
 // initializeBlockStore creates a block storage and populates it w/ a dummy
 // block at +height+.
 func initializeBlockStore(db dbm.DB, state sm.State, valAddr []byte) *store.BlockStore {
-	blockStore := store.MockBlockStore(db)
+	blockStore := store.NewBlockStore(db)
 
 	for i := int64(1); i <= state.LastBlockHeight; i++ {
 		lastCommit := makeCommit(i-1, valAddr)
@@ -408,10 +407,7 @@ func initializeBlockStore(db dbm.DB, state sm.State, valAddr []byte) *store.Bloc
 		partSet := block.MakePartSet(parts)
 
 		seenCommit := makeCommit(i, valAddr)
-		err := blockStore.SaveBlock(context.TODO(), block, partSet, seenCommit)
-		if err != nil {
-			panic(err)
-		}
+		blockStore.SaveBlock(block, partSet, seenCommit)
 	}
 
 	return blockStore

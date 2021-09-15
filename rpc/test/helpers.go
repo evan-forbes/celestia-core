@@ -8,18 +8,17 @@ import (
 	"strings"
 	"time"
 
-	abci "github.com/lazyledger/lazyledger-core/abci/types"
-	cfg "github.com/lazyledger/lazyledger-core/config"
-	"github.com/lazyledger/lazyledger-core/ipfs"
-	"github.com/lazyledger/lazyledger-core/libs/log"
-	tmnet "github.com/lazyledger/lazyledger-core/libs/net"
-	nm "github.com/lazyledger/lazyledger-core/node"
-	"github.com/lazyledger/lazyledger-core/p2p"
-	"github.com/lazyledger/lazyledger-core/privval"
-	"github.com/lazyledger/lazyledger-core/proxy"
-	ctypes "github.com/lazyledger/lazyledger-core/rpc/core/types"
-	core_grpc "github.com/lazyledger/lazyledger-core/rpc/grpc"
-	rpcclient "github.com/lazyledger/lazyledger-core/rpc/jsonrpc/client"
+	abci "github.com/celestiaorg/celestia-core/abci/types"
+	cfg "github.com/celestiaorg/celestia-core/config"
+	"github.com/celestiaorg/celestia-core/libs/log"
+	tmnet "github.com/celestiaorg/celestia-core/libs/net"
+	nm "github.com/celestiaorg/celestia-core/node"
+	"github.com/celestiaorg/celestia-core/p2p"
+	"github.com/celestiaorg/celestia-core/privval"
+	"github.com/celestiaorg/celestia-core/proxy"
+	ctypes "github.com/celestiaorg/celestia-core/rpc/core/types"
+	core_grpc "github.com/celestiaorg/celestia-core/rpc/grpc"
+	rpcclient "github.com/celestiaorg/celestia-core/rpc/jsonrpc/client"
 )
 
 // Options helps with specifying some parameters for our RPC testing for greater
@@ -176,7 +175,6 @@ func NewTendermint(app abci.Application, opts *Options) *nm.Node {
 	node, err := nm.NewNode(config, pv, nodeKey, papp,
 		nm.DefaultGenesisDocProviderFunc(config),
 		nm.InMemDBProvider,
-		ipfs.Mock(),
 		nm.DefaultMetricsProvider(config.Instrumentation),
 		logger,
 	)

@@ -6,13 +6,13 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 
-	cstypes "github.com/lazyledger/lazyledger-core/consensus/types"
-	"github.com/lazyledger/lazyledger-core/libs/bits"
-	tmmath "github.com/lazyledger/lazyledger-core/libs/math"
-	"github.com/lazyledger/lazyledger-core/p2p"
-	tmcons "github.com/lazyledger/lazyledger-core/proto/tendermint/consensus"
-	tmproto "github.com/lazyledger/lazyledger-core/proto/tendermint/types"
-	"github.com/lazyledger/lazyledger-core/types"
+	cstypes "github.com/celestiaorg/celestia-core/consensus/types"
+	"github.com/celestiaorg/celestia-core/libs/bits"
+	tmmath "github.com/celestiaorg/celestia-core/libs/math"
+	"github.com/celestiaorg/celestia-core/p2p"
+	tmcons "github.com/celestiaorg/celestia-core/proto/tendermint/consensus"
+	tmproto "github.com/celestiaorg/celestia-core/proto/tendermint/types"
+	"github.com/celestiaorg/celestia-core/types"
 )
 
 // MsgToProto takes a consensus message type and returns the proto defined consensus message
@@ -50,10 +50,7 @@ func MsgToProto(msg Message) (*tmcons.Message, error) {
 			},
 		}
 	case *ProposalMessage:
-		pbP, err := msg.Proposal.ToProto()
-		if err != nil {
-			return nil, err
-		}
+		pbP := msg.Proposal.ToProto()
 
 		pb = tmcons.Message{
 			Sum: &tmcons.Message_Proposal{

@@ -9,12 +9,12 @@ import (
 	"reflect"
 	"time"
 
-	abci "github.com/lazyledger/lazyledger-core/abci/types"
-	"github.com/lazyledger/lazyledger-core/crypto/merkle"
-	"github.com/lazyledger/lazyledger-core/libs/log"
-	"github.com/lazyledger/lazyledger-core/proxy"
-	sm "github.com/lazyledger/lazyledger-core/state"
-	"github.com/lazyledger/lazyledger-core/types"
+	abci "github.com/celestiaorg/celestia-core/abci/types"
+	"github.com/celestiaorg/celestia-core/crypto/merkle"
+	"github.com/celestiaorg/celestia-core/libs/log"
+	"github.com/celestiaorg/celestia-core/proxy"
+	sm "github.com/celestiaorg/celestia-core/state"
+	"github.com/celestiaorg/celestia-core/types"
 )
 
 var crc32c = crc32.MakeTable(crc32.Castagnoli)
@@ -463,10 +463,7 @@ func (h *Handshaker) replayBlocks(
 	}
 	for i := firstBlock; i <= finalBlock; i++ {
 		h.logger.Info("Applying block", "height", i)
-		block, err := h.store.LoadBlock(context.TODO(), i)
-		if err != nil {
-			return nil, err
-		}
+		block := h.store.LoadBlock(i)
 		// Extra check to ensure the app was not changed in a way it shouldn't have.
 		if len(appHash) > 0 {
 			assertAppHashEqualsOneFromBlock(appHash, block)
@@ -495,10 +492,7 @@ func (h *Handshaker) replayBlocks(
 
 // ApplyBlock on the proxyApp with the last block.
 func (h *Handshaker) replayBlock(state sm.State, height int64, proxyApp proxy.AppConnConsensus) (sm.State, error) {
-	block, err := h.store.LoadBlock(context.TODO(), height)
-	if err != nil {
-		return sm.State{}, err
-	}
+	block := h.store.LoadBlock(height)
 	meta := h.store.LoadBlockMeta(height)
 
 	// Use stubs for both mempool and evidence pool since no transactions nor
@@ -506,6 +500,7 @@ func (h *Handshaker) replayBlock(state sm.State, height int64, proxyApp proxy.Ap
 	blockExec := sm.NewBlockExecutor(h.stateStore, h.logger, proxyApp, emptyMempool{}, sm.EmptyEvidencePool{})
 	blockExec.SetEventBus(h.eventBus)
 
+	var err error
 	state, _, err = blockExec.ApplyBlock(state, meta.BlockID, block)
 	if err != nil {
 		return sm.State{}, err

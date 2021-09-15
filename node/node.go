@@ -5,50 +5,46 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"net"
 	"net/http"
 	_ "net/http/pprof" // nolint: gosec // securely exposed on separate, optional port
 	"strings"
 	"time"
 
-	ipld "github.com/ipfs/go-ipld-format"
-	"github.com/libp2p/go-libp2p-core/routing"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/cors"
 
-	abci "github.com/lazyledger/lazyledger-core/abci/types"
-	bcv0 "github.com/lazyledger/lazyledger-core/blockchain/v0"
-	cfg "github.com/lazyledger/lazyledger-core/config"
-	cs "github.com/lazyledger/lazyledger-core/consensus"
-	"github.com/lazyledger/lazyledger-core/crypto"
-	"github.com/lazyledger/lazyledger-core/evidence"
-	"github.com/lazyledger/lazyledger-core/ipfs"
-	dbm "github.com/lazyledger/lazyledger-core/libs/db"
-	"github.com/lazyledger/lazyledger-core/libs/db/badgerdb"
-	tmjson "github.com/lazyledger/lazyledger-core/libs/json"
-	"github.com/lazyledger/lazyledger-core/libs/log"
-	tmpubsub "github.com/lazyledger/lazyledger-core/libs/pubsub"
-	"github.com/lazyledger/lazyledger-core/libs/service"
-	"github.com/lazyledger/lazyledger-core/light"
-	mempl "github.com/lazyledger/lazyledger-core/mempool"
-	"github.com/lazyledger/lazyledger-core/p2p"
-	"github.com/lazyledger/lazyledger-core/p2p/pex"
-	"github.com/lazyledger/lazyledger-core/privval"
-	"github.com/lazyledger/lazyledger-core/proxy"
-	rpccore "github.com/lazyledger/lazyledger-core/rpc/core"
-	grpccore "github.com/lazyledger/lazyledger-core/rpc/grpc"
-	rpcserver "github.com/lazyledger/lazyledger-core/rpc/jsonrpc/server"
-	sm "github.com/lazyledger/lazyledger-core/state"
-	"github.com/lazyledger/lazyledger-core/state/txindex"
-	"github.com/lazyledger/lazyledger-core/state/txindex/kv"
-	"github.com/lazyledger/lazyledger-core/state/txindex/null"
-	"github.com/lazyledger/lazyledger-core/statesync"
-	"github.com/lazyledger/lazyledger-core/store"
-	"github.com/lazyledger/lazyledger-core/types"
-	tmtime "github.com/lazyledger/lazyledger-core/types/time"
-	"github.com/lazyledger/lazyledger-core/version"
+	abci "github.com/celestiaorg/celestia-core/abci/types"
+	bcv0 "github.com/celestiaorg/celestia-core/blockchain/v0"
+	cfg "github.com/celestiaorg/celestia-core/config"
+	cs "github.com/celestiaorg/celestia-core/consensus"
+	"github.com/celestiaorg/celestia-core/crypto"
+	"github.com/celestiaorg/celestia-core/evidence"
+	dbm "github.com/celestiaorg/celestia-core/libs/db"
+	"github.com/celestiaorg/celestia-core/libs/db/badgerdb"
+	tmjson "github.com/celestiaorg/celestia-core/libs/json"
+	"github.com/celestiaorg/celestia-core/libs/log"
+	tmpubsub "github.com/celestiaorg/celestia-core/libs/pubsub"
+	"github.com/celestiaorg/celestia-core/libs/service"
+	"github.com/celestiaorg/celestia-core/light"
+	mempl "github.com/celestiaorg/celestia-core/mempool"
+	"github.com/celestiaorg/celestia-core/p2p"
+	"github.com/celestiaorg/celestia-core/p2p/pex"
+	"github.com/celestiaorg/celestia-core/privval"
+	"github.com/celestiaorg/celestia-core/proxy"
+	rpccore "github.com/celestiaorg/celestia-core/rpc/core"
+	grpccore "github.com/celestiaorg/celestia-core/rpc/grpc"
+	rpcserver "github.com/celestiaorg/celestia-core/rpc/jsonrpc/server"
+	sm "github.com/celestiaorg/celestia-core/state"
+	"github.com/celestiaorg/celestia-core/state/txindex"
+	"github.com/celestiaorg/celestia-core/state/txindex/kv"
+	"github.com/celestiaorg/celestia-core/state/txindex/null"
+	"github.com/celestiaorg/celestia-core/statesync"
+	"github.com/celestiaorg/celestia-core/store"
+	"github.com/celestiaorg/celestia-core/types"
+	tmtime "github.com/celestiaorg/celestia-core/types/time"
+	"github.com/celestiaorg/celestia-core/version"
 )
 
 //------------------------------------------------------------------------------
@@ -87,12 +83,12 @@ func DefaultGenesisDocProviderFunc(config *cfg.Config) GenesisDocProvider {
 }
 
 // Provider takes a config and a logger and returns a ready to go Node.
-type Provider func(*cfg.Config, ipfs.NodeProvider, log.Logger) (*Node, error)
+type Provider func(*cfg.Config, log.Logger) (*Node, error)
 
 // DefaultNewNode returns a Tendermint node with default settings for the
 // PrivValidator, ClientCreator, GenesisDoc, and DBProvider.
 // It implements NodeProvider.
-func DefaultNewNode(config *cfg.Config, ipfs ipfs.NodeProvider, logger log.Logger) (*Node, error) {
+func DefaultNewNode(config *cfg.Config, logger log.Logger) (*Node, error) {
 	nodeKey, err := p2p.LoadOrGenNodeKey(config.NodeKeyFile())
 	if err != nil {
 		return nil, fmt.Errorf("failed to load or gen node key %s: %w", config.NodeKeyFile(), err)
@@ -109,7 +105,6 @@ func DefaultNewNode(config *cfg.Config, ipfs ipfs.NodeProvider, logger log.Logge
 		proxy.DefaultClientCreator(config.ProxyApp, config.DBDir()),
 		DefaultGenesisDocProviderFunc(config),
 		DefaultDBProvider,
-		ipfs,
 		DefaultMetricsProvider(config.Instrumentation),
 		logger,
 	)
@@ -215,8 +210,6 @@ type Node struct {
 	txIndexer         txindex.TxIndexer
 	indexerService    *txindex.IndexerService
 	prometheusSrv     *http.Server
-
-	ipfsClose io.Closer
 }
 
 func createAndStartProxyAppConns(clientCreator proxy.ClientCreator, logger log.Logger) (proxy.AppConns, error) {
@@ -369,8 +362,7 @@ func createBlockchainReactor(config *cfg.Config,
 	return bcReactor, nil
 }
 
-func createConsensusReactor(
-	config *cfg.Config,
+func createConsensusReactor(config *cfg.Config,
 	state sm.State,
 	blockExec *sm.BlockExecutor,
 	blockStore sm.BlockStore,
@@ -380,8 +372,6 @@ func createConsensusReactor(
 	csMetrics *cs.Metrics,
 	waitSync bool,
 	eventBus *types.EventBus,
-	dag ipld.DAGService,
-	croute routing.ContentRouting,
 	consensusLogger log.Logger) (*cs.Reactor, *cs.State) {
 
 	consensusState := cs.NewState(
@@ -390,8 +380,6 @@ func createConsensusReactor(
 		blockExec,
 		blockStore,
 		mempool,
-		dag,
-		croute,
 		evidencePool,
 		cs.StateMetrics(csMetrics),
 	)
@@ -620,7 +608,6 @@ func NewNode(config *cfg.Config,
 	clientCreator proxy.ClientCreator,
 	genesisDocProvider GenesisDocProvider,
 	dbProvider DBProvider,
-	ipfsProvider ipfs.NodeProvider,
 	metricsProvider MetricsProvider,
 	logger log.Logger,
 	options ...Option) (*Node, error) {
@@ -685,12 +672,7 @@ func NewNode(config *cfg.Config,
 		return nil, err
 	}
 
-	ipfsNode, err := ipfsProvider()
-	if err != nil {
-		return nil, err
-	}
-
-	blockStore := store.NewBlockStore(blockStoreDB, ipfsNode.Blockstore, logger)
+	blockStore := store.NewBlockStore(blockStoreDB)
 
 	// Create the handshaker, which calls RequestInfo, sets the AppVersion on the state,
 	// and replays any blocks as necessary to sync tendermint with the app.
@@ -751,7 +733,7 @@ func NewNode(config *cfg.Config,
 	}
 	consensusReactor, consensusState := createConsensusReactor(
 		config, state, blockExec, blockStore, mempool, evidencePool,
-		privValidator, csMetrics, stateSync || fastSync, eventBus, ipfsNode.DAG, ipfsNode.Routing, consensusLogger,
+		privValidator, csMetrics, stateSync || fastSync, eventBus, consensusLogger,
 	)
 
 	// Set up state sync reactor, and schedule a sync if requested.
@@ -852,7 +834,6 @@ func NewNode(config *cfg.Config,
 		txIndexer:        txIndexer,
 		indexerService:   indexerService,
 		eventBus:         eventBus,
-		ipfsClose:        ipfsNode,
 	}
 	node.BaseService = *service.NewBaseService(logger, "Node", node)
 
@@ -995,10 +976,6 @@ func (n *Node) OnStop() {
 			// Error from closing listeners, or context timeout:
 			n.Logger.Error("Prometheus HTTP server Shutdown", "err", err)
 		}
-	}
-
-	if err := n.ipfsClose.Close(); err != nil {
-		n.Logger.Error("ipfsClose.Close()", err)
 	}
 }
 
@@ -1402,8 +1379,8 @@ func createAndStartPrivValidatorSocketClient(
 	}
 
 	const (
-		retries = 50 // 50 * 200ms = 10s total
-		timeout = 200 * time.Millisecond
+		retries = 50 // 50 * 100ms = 5s total
+		timeout = 100 * time.Millisecond
 	)
 	pvscWithRetries := privval.NewRetrySignerClient(pvsc, retries, timeout)
 

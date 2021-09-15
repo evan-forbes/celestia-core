@@ -7,19 +7,18 @@ import (
 	"testing"
 	"time"
 
-	mdutils "github.com/ipfs/go-merkledag/test"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/lazyledger/lazyledger-core/abci/example/counter"
-	cstypes "github.com/lazyledger/lazyledger-core/consensus/types"
-	"github.com/lazyledger/lazyledger-core/crypto/tmhash"
-	"github.com/lazyledger/lazyledger-core/libs/log"
-	tmpubsub "github.com/lazyledger/lazyledger-core/libs/pubsub"
-	tmrand "github.com/lazyledger/lazyledger-core/libs/rand"
-	p2pmock "github.com/lazyledger/lazyledger-core/p2p/mock"
-	tmproto "github.com/lazyledger/lazyledger-core/proto/tendermint/types"
-	"github.com/lazyledger/lazyledger-core/types"
+	"github.com/celestiaorg/celestia-core/abci/example/counter"
+	cstypes "github.com/celestiaorg/celestia-core/consensus/types"
+	"github.com/celestiaorg/celestia-core/crypto/tmhash"
+	"github.com/celestiaorg/celestia-core/libs/log"
+	tmpubsub "github.com/celestiaorg/celestia-core/libs/pubsub"
+	tmrand "github.com/celestiaorg/celestia-core/libs/rand"
+	p2pmock "github.com/celestiaorg/celestia-core/p2p/mock"
+	tmproto "github.com/celestiaorg/celestia-core/proto/tendermint/types"
+	"github.com/celestiaorg/celestia-core/types"
 )
 
 /*
@@ -209,9 +208,8 @@ func TestStateBadProposal(t *testing.T) {
 	propBlock.AppHash = stateHash
 	propBlockParts := propBlock.MakePartSet(partSize)
 	blockID := types.BlockID{Hash: propBlock.Hash(), PartSetHeader: propBlockParts.Header()}
-	proposal := types.NewProposal(vs2.Height, round, -1, blockID, &propBlock.DataAvailabilityHeader)
-	p, err := proposal.ToProto()
-	require.NoError(t, err)
+	proposal := types.NewProposal(vs2.Height, round, -1, blockID)
+	p := proposal.ToProto()
 	if err := vs2.SignProposal(config.ChainID(), p); err != nil {
 		t.Fatal("failed to sign bad proposal", err)
 	}
@@ -265,9 +263,8 @@ func TestStateOversizedBlock(t *testing.T) {
 
 	propBlockParts := propBlock.MakePartSet(partSize)
 	blockID := types.BlockID{Hash: propBlock.Hash(), PartSetHeader: propBlockParts.Header()}
-	proposal := types.NewProposal(height, round, -1, blockID, &propBlock.DataAvailabilityHeader)
-	p, err := proposal.ToProto()
-	require.NoError(t, err)
+	proposal := types.NewProposal(height, round, -1, blockID)
+	p := proposal.ToProto()
 	if err := vs2.SignProposal(config.ChainID(), p); err != nil {
 		t.Fatal("failed to sign bad proposal", err)
 	}
@@ -640,7 +637,7 @@ func TestStateLockPOLRelock(t *testing.T) {
 	signAddVotes(cs1, tmproto.PrecommitType, nil, types.PartSetHeader{}, vs2, vs3, vs4)
 
 	// before we timeout to the new round set the new proposal
-	cs2 := newState(cs1.state, vs2, counter.NewApplication(true), mdutils.Mock())
+	cs2 := newState(cs1.state, vs2, counter.NewApplication(true))
 	prop, propBlock := decideProposal(cs2, vs2, vs2.Height, vs2.Round+1)
 	if prop == nil || propBlock == nil {
 		t.Fatal("Failed to create proposal block with vs2")
@@ -826,7 +823,7 @@ func TestStateLockPOLUnlockOnUnknownBlock(t *testing.T) {
 	signAddVotes(cs1, tmproto.PrecommitType, nil, types.PartSetHeader{}, vs2, vs3, vs4)
 
 	// before we timeout to the new round set the new proposal
-	cs2 := newState(cs1.state, vs2, counter.NewApplication(true), mdutils.Mock())
+	cs2 := newState(cs1.state, vs2, counter.NewApplication(true))
 	prop, propBlock := decideProposal(cs2, vs2, vs2.Height, vs2.Round+1)
 	if prop == nil || propBlock == nil {
 		t.Fatal("Failed to create proposal block with vs2")
@@ -870,7 +867,7 @@ func TestStateLockPOLUnlockOnUnknownBlock(t *testing.T) {
 	signAddVotes(cs1, tmproto.PrecommitType, nil, types.PartSetHeader{}, vs2, vs3, vs4)
 
 	// before we timeout to the new round set the new proposal
-	cs3 := newState(cs1.state, vs3, counter.NewApplication(true), mdutils.Mock())
+	cs3 := newState(cs1.state, vs3, counter.NewApplication(true))
 	prop, propBlock = decideProposal(cs3, vs3, vs3.Height, vs3.Round+1)
 	if prop == nil || propBlock == nil {
 		t.Fatal("Failed to create proposal block with vs2")
@@ -1096,9 +1093,8 @@ func TestStateLockPOLSafety2(t *testing.T) {
 
 	round++ // moving to the next round
 	// in round 2 we see the polkad block from round 0
-	newProp := types.NewProposal(height, round, 0, propBlockID0, &propBlock0.DataAvailabilityHeader)
-	p, err := newProp.ToProto()
-	require.NoError(t, err)
+	newProp := types.NewProposal(height, round, 0, propBlockID0)
+	p := newProp.ToProto()
 	if err := vs3.SignProposal(config.ChainID(), p); err != nil {
 		t.Fatal(err)
 	}

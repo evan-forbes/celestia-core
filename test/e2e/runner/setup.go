@@ -19,13 +19,12 @@ import (
 
 	"github.com/BurntSushi/toml"
 
-	"github.com/lazyledger/lazyledger-core/config"
-	"github.com/lazyledger/lazyledger-core/crypto/ed25519"
-	"github.com/lazyledger/lazyledger-core/ipfs"
-	"github.com/lazyledger/lazyledger-core/p2p"
-	"github.com/lazyledger/lazyledger-core/privval"
-	e2e "github.com/lazyledger/lazyledger-core/test/e2e/pkg"
-	"github.com/lazyledger/lazyledger-core/types"
+	"github.com/celestiaorg/celestia-core/config"
+	"github.com/celestiaorg/celestia-core/crypto/ed25519"
+	"github.com/celestiaorg/celestia-core/p2p"
+	"github.com/celestiaorg/celestia-core/privval"
+	e2e "github.com/celestiaorg/celestia-core/test/e2e/pkg"
+	"github.com/celestiaorg/celestia-core/types"
 )
 
 const (
@@ -86,8 +85,7 @@ func Setup(testnet *e2e.Testnet) error {
 		if err != nil {
 			return err
 		}
-		// todo(evan): the path should be a constant
-		cfg.IPFS.RepoPath = filepath.Join(nodeDir, ".ipfs")
+
 		config.WriteConfigFile(filepath.Join(nodeDir, "config", "config.toml"), cfg) // panics
 
 		appCfg, err := MakeAppConfig(node)
@@ -115,10 +113,6 @@ func Setup(testnet *e2e.Testnet) error {
 			filepath.Join(nodeDir, PrivvalDummyKeyFile),
 			filepath.Join(nodeDir, PrivvalDummyStateFile),
 		)).Save()
-		err = ipfs.InitRepo(cfg.IPFS.RepoPath, logger)
-		if err != nil {
-			return err
-		}
 	}
 
 	return nil

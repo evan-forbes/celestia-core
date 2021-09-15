@@ -3,10 +3,10 @@ package core
 import (
 	"fmt"
 
-	tmmath "github.com/lazyledger/lazyledger-core/libs/math"
-	ctypes "github.com/lazyledger/lazyledger-core/rpc/core/types"
-	rpctypes "github.com/lazyledger/lazyledger-core/rpc/jsonrpc/types"
-	"github.com/lazyledger/lazyledger-core/types"
+	tmmath "github.com/celestiaorg/celestia-core/libs/math"
+	ctypes "github.com/celestiaorg/celestia-core/rpc/core/types"
+	rpctypes "github.com/celestiaorg/celestia-core/rpc/jsonrpc/types"
+	"github.com/celestiaorg/celestia-core/types"
 )
 
 // BlockchainInfo gets block headers for minHeight <= height <= maxHeight.
@@ -89,10 +89,7 @@ func Block(ctx *rpctypes.Context, heightPtr *int64) (*ctypes.ResultBlock, error)
 		return nil, err
 	}
 
-	block, err := env.BlockStore.LoadBlock(ctx.Context(), height)
-	if err != nil {
-		return &ctypes.ResultBlock{BlockID: types.BlockID{}, Block: block}, err
-	}
+	block := env.BlockStore.LoadBlock(height)
 	blockMeta := env.BlockStore.LoadBlockMeta(height)
 	if blockMeta == nil {
 		return &ctypes.ResultBlock{BlockID: types.BlockID{}, Block: block}, nil
@@ -103,10 +100,7 @@ func Block(ctx *rpctypes.Context, heightPtr *int64) (*ctypes.ResultBlock, error)
 // BlockByHash gets block by hash.
 // More: https://docs.tendermint.com/master/rpc/#/Info/block_by_hash
 func BlockByHash(ctx *rpctypes.Context, hash []byte) (*ctypes.ResultBlock, error) {
-	block, err := env.BlockStore.LoadBlockByHash(ctx.Context(), hash)
-	if err != nil {
-		return &ctypes.ResultBlock{BlockID: types.BlockID{}, Block: nil}, err
-	}
+	block := env.BlockStore.LoadBlockByHash(hash)
 	if block == nil {
 		return &ctypes.ResultBlock{BlockID: types.BlockID{}, Block: nil}, nil
 	}
@@ -153,12 +147,7 @@ func DataAvailabilityHeader(ctx *rpctypes.Context, heightPtr *int64) (*ctypes.Re
 	// depends on either:
 	// - https://github.com/lazyledger/lazyledger-core/pull/312, or
 	// - https://github.com/lazyledger/lazyledger-core/pull/218
-	block, err := env.BlockStore.LoadBlock(ctx.Context(), height)
-	if err != nil {
-		return &ctypes.ResultDataAvailabilityHeader{
-			DataAvailabilityHeader: types.DataAvailabilityHeader{},
-		}, err
-	}
+	block := env.BlockStore.LoadBlock(height)
 	_ = block.Hash()
 	dah := block.DataAvailabilityHeader
 	return &ctypes.ResultDataAvailabilityHeader{

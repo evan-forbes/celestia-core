@@ -1,7 +1,6 @@
 package v0
 
 import (
-	"context"
 	"crypto/sha256"
 	"fmt"
 	"os"
@@ -12,17 +11,17 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	abci "github.com/lazyledger/lazyledger-core/abci/types"
-	cfg "github.com/lazyledger/lazyledger-core/config"
-	"github.com/lazyledger/lazyledger-core/libs/db/memdb"
-	"github.com/lazyledger/lazyledger-core/libs/log"
-	"github.com/lazyledger/lazyledger-core/mempool/mock"
-	"github.com/lazyledger/lazyledger-core/p2p"
-	"github.com/lazyledger/lazyledger-core/proxy"
-	sm "github.com/lazyledger/lazyledger-core/state"
-	"github.com/lazyledger/lazyledger-core/store"
-	"github.com/lazyledger/lazyledger-core/types"
-	tmtime "github.com/lazyledger/lazyledger-core/types/time"
+	abci "github.com/celestiaorg/celestia-core/abci/types"
+	cfg "github.com/celestiaorg/celestia-core/config"
+	"github.com/celestiaorg/celestia-core/libs/db/memdb"
+	"github.com/celestiaorg/celestia-core/libs/log"
+	"github.com/celestiaorg/celestia-core/mempool/mock"
+	"github.com/celestiaorg/celestia-core/p2p"
+	"github.com/celestiaorg/celestia-core/proxy"
+	sm "github.com/celestiaorg/celestia-core/state"
+	"github.com/celestiaorg/celestia-core/store"
+	"github.com/celestiaorg/celestia-core/types"
+	tmtime "github.com/celestiaorg/celestia-core/types/time"
 )
 
 var config *cfg.Config
@@ -69,9 +68,10 @@ func newBlockchainReactor(
 		panic(fmt.Errorf("error start app: %w", err))
 	}
 
+	blockDB := memdb.NewDB()
 	stateDB := memdb.NewDB()
 	stateStore := sm.NewStore(stateDB)
-	blockStore := store.MockBlockStore(nil)
+	blockStore := store.NewBlockStore(blockDB)
 
 	state, err := stateStore.LoadFromDBOrGenesisDoc(genDoc)
 	if err != nil {
@@ -99,10 +99,7 @@ func newBlockchainReactor(
 		lastCommit := types.NewCommit(blockHeight-1, 0, types.BlockID{}, nil)
 		if blockHeight > 1 {
 			lastBlockMeta := blockStore.LoadBlockMeta(blockHeight - 1)
-			lastBlock, err := blockStore.LoadBlock(context.TODO(), blockHeight-1)
-			if err != nil {
-				panic(err)
-			}
+			lastBlock := blockStore.LoadBlock(blockHeight - 1)
 
 			vote, err := types.MakeVote(
 				lastBlock.Header.Height,
@@ -129,10 +126,7 @@ func newBlockchainReactor(
 			panic(fmt.Errorf("error apply block: %w", err))
 		}
 
-		err := blockStore.SaveBlock(context.TODO(), thisBlock, thisParts, lastCommit)
-		if err != nil {
-			panic(err)
-		}
+		blockStore.SaveBlock(thisBlock, thisParts, lastCommit)
 	}
 
 	bcReactor := NewBlockchainReactor(state.Copy(), blockExec, blockStore, fastSync)
@@ -189,10 +183,7 @@ func TestNoBlockResponse(t *testing.T) {
 	assert.Equal(t, maxBlockHeight, reactorPairs[0].reactor.store.Height())
 
 	for _, tt := range tests {
-		block, err := reactorPairs[1].reactor.store.LoadBlock(context.TODO(), tt.height)
-		if err != nil {
-			panic(err)
-		}
+		block := reactorPairs[1].reactor.store.LoadBlock(tt.height)
 		if tt.existent {
 			assert.True(t, block != nil)
 		} else {

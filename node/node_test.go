@@ -13,26 +13,25 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/lazyledger/lazyledger-core/abci/example/kvstore"
-	cfg "github.com/lazyledger/lazyledger-core/config"
-	"github.com/lazyledger/lazyledger-core/crypto"
-	"github.com/lazyledger/lazyledger-core/crypto/ed25519"
-	"github.com/lazyledger/lazyledger-core/crypto/tmhash"
-	"github.com/lazyledger/lazyledger-core/evidence"
-	"github.com/lazyledger/lazyledger-core/ipfs"
-	dbm "github.com/lazyledger/lazyledger-core/libs/db"
-	"github.com/lazyledger/lazyledger-core/libs/db/memdb"
-	"github.com/lazyledger/lazyledger-core/libs/log"
-	tmrand "github.com/lazyledger/lazyledger-core/libs/rand"
-	mempl "github.com/lazyledger/lazyledger-core/mempool"
-	"github.com/lazyledger/lazyledger-core/p2p"
-	p2pmock "github.com/lazyledger/lazyledger-core/p2p/mock"
-	"github.com/lazyledger/lazyledger-core/privval"
-	"github.com/lazyledger/lazyledger-core/proxy"
-	sm "github.com/lazyledger/lazyledger-core/state"
-	"github.com/lazyledger/lazyledger-core/store"
-	"github.com/lazyledger/lazyledger-core/types"
-	tmtime "github.com/lazyledger/lazyledger-core/types/time"
+	"github.com/celestiaorg/celestia-core/abci/example/kvstore"
+	cfg "github.com/celestiaorg/celestia-core/config"
+	"github.com/celestiaorg/celestia-core/crypto"
+	"github.com/celestiaorg/celestia-core/crypto/ed25519"
+	"github.com/celestiaorg/celestia-core/crypto/tmhash"
+	"github.com/celestiaorg/celestia-core/evidence"
+	dbm "github.com/celestiaorg/celestia-core/libs/db"
+	"github.com/celestiaorg/celestia-core/libs/db/memdb"
+	"github.com/celestiaorg/celestia-core/libs/log"
+	tmrand "github.com/celestiaorg/celestia-core/libs/rand"
+	mempl "github.com/celestiaorg/celestia-core/mempool"
+	"github.com/celestiaorg/celestia-core/p2p"
+	p2pmock "github.com/celestiaorg/celestia-core/p2p/mock"
+	"github.com/celestiaorg/celestia-core/privval"
+	"github.com/celestiaorg/celestia-core/proxy"
+	sm "github.com/celestiaorg/celestia-core/state"
+	"github.com/celestiaorg/celestia-core/store"
+	"github.com/celestiaorg/celestia-core/types"
+	tmtime "github.com/celestiaorg/celestia-core/types/time"
 )
 
 func defaultNewTestNode(config *cfg.Config, logger log.Logger) (*Node, error) {
@@ -52,7 +51,6 @@ func defaultNewTestNode(config *cfg.Config, logger log.Logger) (*Node, error) {
 		proxy.DefaultClientCreator(config.ProxyApp, config.DBDir()),
 		DefaultGenesisDocProviderFunc(config),
 		InMemDBProvider,
-		ipfs.Mock(),
 		DefaultMetricsProvider(config.Instrumentation),
 		logger,
 	)
@@ -218,7 +216,7 @@ func TestNodeSetPrivValIPC(t *testing.T) {
 		log.TestingLogger(),
 		dialer,
 	)
-	privval.SignerDialerEndpointTimeoutReadWrite(400 * time.Millisecond)(dialerEndpoint)
+	privval.SignerDialerEndpointTimeoutReadWrite(100 * time.Millisecond)(dialerEndpoint)
 
 	pvsc := privval.NewSignerServer(
 		dialerEndpoint,
@@ -283,7 +281,7 @@ func TestCreateProposalBlock(t *testing.T) {
 
 	// Make EvidencePool
 	evidenceDB := memdb.NewDB()
-	blockStore := store.MockBlockStore(nil)
+	blockStore := store.NewBlockStore(memdb.NewDB())
 	evidencePool, err := evidence.NewPool(evidenceDB, stateStore, blockStore)
 	require.NoError(t, err)
 	evidencePool.SetLogger(logger)
@@ -330,7 +328,7 @@ func TestCreateProposalBlock(t *testing.T) {
 	// check that the part set does not exceed the maximum block size
 	partSet := block.MakePartSet(partSize)
 	// TODO(ismail): properly fix this test
-	// https://github.com/lazyledger/lazyledger-core/issues/77
+	// https://github.com/celestiaorg/celestia-core/issues/77
 	assert.Less(t, partSet.ByteSize(), int64(maxBytes)*2)
 
 	partSetFromHeader := types.NewPartSetFromHeader(partSet.Header())
@@ -399,7 +397,7 @@ func TestMaxTxsProposalBlockSize(t *testing.T) {
 	pb, err := block.ToProto()
 	require.NoError(t, err)
 	// TODO(ismail): fix this test properly
-	// https://github.com/lazyledger/lazyledger-core/issues/77
+	// https://github.com/celestiaorg/celestia-core/issues/77
 	assert.Less(t, int64(pb.Size()), maxBytes*2)
 
 	// check that the part set does not exceed the maximum block size
@@ -539,7 +537,6 @@ func TestNodeNewNodeCustomReactors(t *testing.T) {
 		proxy.DefaultClientCreator(config.ProxyApp, config.DBDir()),
 		DefaultGenesisDocProviderFunc(config),
 		InMemDBProvider,
-		ipfs.Mock(),
 		DefaultMetricsProvider(config.Instrumentation),
 		log.TestingLogger(),
 		CustomReactors(map[string]p2p.Reactor{"FOO": cr, "BLOCKCHAIN": customBlockchainReactor}),

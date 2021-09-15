@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/lazyledger/lazyledger-core/light/provider"
-	"github.com/lazyledger/lazyledger-core/types"
+	"github.com/celestiaorg/celestia-core/light/provider"
+	"github.com/celestiaorg/celestia-core/types"
 )
 
 type Mock struct {
@@ -73,10 +73,6 @@ func (p *Mock) LightBlock(_ context.Context, height int64) (*types.LightBlock, e
 		return nil, provider.ErrBadLightBlock{Reason: err}
 	}
 	return lb, nil
-}
-
-func (p *Mock) DASLightBlock(ctx context.Context, height int64) (*types.LightBlock, error) {
-	panic("not implemented")
 }
 
 func (p *Mock) ReportEvidence(_ context.Context, ev types.Evidence) error {

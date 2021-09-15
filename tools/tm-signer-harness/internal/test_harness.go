@@ -8,17 +8,17 @@ import (
 	"os/signal"
 	"time"
 
-	"github.com/lazyledger/lazyledger-core/crypto/tmhash"
+	"github.com/celestiaorg/celestia-core/crypto/tmhash"
 
-	"github.com/lazyledger/lazyledger-core/crypto/ed25519"
-	"github.com/lazyledger/lazyledger-core/privval"
-	"github.com/lazyledger/lazyledger-core/state"
+	"github.com/celestiaorg/celestia-core/crypto/ed25519"
+	"github.com/celestiaorg/celestia-core/privval"
+	"github.com/celestiaorg/celestia-core/state"
 
-	"github.com/lazyledger/lazyledger-core/libs/log"
-	tmnet "github.com/lazyledger/lazyledger-core/libs/net"
-	tmos "github.com/lazyledger/lazyledger-core/libs/os"
-	tmproto "github.com/lazyledger/lazyledger-core/proto/tendermint/types"
-	"github.com/lazyledger/lazyledger-core/types"
+	"github.com/celestiaorg/celestia-core/libs/log"
+	tmnet "github.com/celestiaorg/celestia-core/libs/net"
+	tmos "github.com/celestiaorg/celestia-core/libs/os"
+	tmproto "github.com/celestiaorg/celestia-core/proto/tendermint/types"
+	"github.com/celestiaorg/celestia-core/types"
 )
 
 // Test harness error codes (which act as exit codes when the test harness fails).
@@ -228,12 +228,8 @@ func (th *TestHarness) TestSignProposal() error {
 			},
 		},
 		Timestamp: time.Now(),
-		DAHeader:  &types.DataAvailabilityHeader{},
 	}
-	p, err := prop.ToProto()
-	if err != nil {
-		return err
-	}
+	p := prop.ToProto()
 	propBytes := types.ProposalSignBytes(th.chainID, p)
 	if err := th.signerClient.SignProposal(th.chainID, p); err != nil {
 		th.logger.Error("FAILED: Signing of proposal", "err", err)
