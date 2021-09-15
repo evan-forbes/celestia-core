@@ -34,6 +34,8 @@ const (
 	// MinSquareSize depicts the smallest original square width.
 	MinSquareSize = 1
 	MinSharecount = MinSquareSize * MinSquareSize
+
+	ProofOfUsingFork = "I am using the fork created by evan"
 )
 
 var (
