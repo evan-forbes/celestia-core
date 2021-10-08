@@ -7,10 +7,10 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/celestiaorg/celestia-core/pkg/consts"
 	"github.com/celestiaorg/nmt"
 	"github.com/celestiaorg/rsmt2d"
 	"github.com/stretchr/testify/assert"
+	"github.com/tendermint/tendermint/pkg/consts"
 )
 
 func TestPushErasuredNamespacedMerkleTree(t *testing.T) {
@@ -27,7 +27,7 @@ func TestPushErasuredNamespacedMerkleTree(t *testing.T) {
 		tree := n.Constructor()
 
 		// push test data to the tree
-		for i, d := range generateErasuredData(t, tc.squareSize, rsmt2d.NewRSGF8Codec()) {
+		for i, d := range generateErasuredData(t, tc.squareSize, consts.DefaultCodec()) {
 			// push will panic if there's an error
 			tree.Push(d, rsmt2d.SquareIndex{Axis: uint(0), Cell: uint(i)})
 		}
@@ -42,7 +42,7 @@ func TestRootErasuredNamespacedMerkleTree(t *testing.T) {
 	data := generateRandNamespacedRawData(size, consts.NamespaceSize, consts.MsgShareSize)
 	n := NewErasuredNamespacedMerkleTree(uint64(size))
 	tree := n.Constructor()
-	nmtTree := nmt.New(sha256.New)
+	nmtTree := nmt.New(sha256.New())
 
 	for i, d := range data {
 		tree.Push(d, rsmt2d.SquareIndex{Axis: uint(0), Cell: uint(i)})
@@ -52,7 +52,7 @@ func TestRootErasuredNamespacedMerkleTree(t *testing.T) {
 		}
 	}
 
-	assert.NotEqual(t, nmtTree.Root().Bytes(), tree.Root())
+	assert.NotEqual(t, nmtTree.Root(), tree.Root())
 }
 
 func TestErasureNamespacedMerkleTreePanics(t *testing.T) {
@@ -64,7 +64,7 @@ func TestErasureNamespacedMerkleTreePanics(t *testing.T) {
 			"push over square size",
 			assert.PanicTestFunc(
 				func() {
-					data := generateErasuredData(t, 16, rsmt2d.NewRSGF8Codec())
+					data := generateErasuredData(t, 16, consts.DefaultCodec())
 					n := NewErasuredNamespacedMerkleTree(uint64(15))
 					tree := n.Constructor()
 					for i, d := range data {
@@ -76,7 +76,7 @@ func TestErasureNamespacedMerkleTreePanics(t *testing.T) {
 			"push in incorrect lexigraphic order",
 			assert.PanicTestFunc(
 				func() {
-					data := generateErasuredData(t, 16, rsmt2d.NewRSGF8Codec())
+					data := generateErasuredData(t, 16, consts.DefaultCodec())
 					n := NewErasuredNamespacedMerkleTree(uint64(16))
 					tree := n.Constructor()
 					for i := len(data) - 1; i > 0; i-- {
@@ -104,7 +104,7 @@ func TestExtendedDataSquare(t *testing.T) {
 
 	tree := NewErasuredNamespacedMerkleTree(uint64(squareSize))
 
-	_, err := rsmt2d.ComputeExtendedDataSquare(raw, rsmt2d.NewRSGF8Codec(), tree.Constructor)
+	_, err := rsmt2d.ComputeExtendedDataSquare(raw, consts.DefaultCodec(), tree.Constructor)
 	assert.NoError(t, err)
 }
 

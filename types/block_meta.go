@@ -5,16 +5,15 @@ import (
 	"errors"
 	"fmt"
 
-	tmproto "github.com/celestiaorg/celestia-core/proto/tendermint/types"
+	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 )
 
 // BlockMeta contains meta information.
 type BlockMeta struct {
-	BlockID   BlockID                `json:"block_id"`
-	BlockSize int                    `json:"block_size"`
-	Header    Header                 `json:"header"`
-	NumTxs    int                    `json:"num_txs"`
-	DAHeader  DataAvailabilityHeader `json:"da_header"`
+	BlockID   BlockID `json:"block_id"`
+	BlockSize int     `json:"block_size"`
+	Header    Header  `json:"header"`
+	NumTxs    int     `json:"num_txs"`
 }
 
 // NewBlockMeta returns a new BlockMeta.
@@ -24,18 +23,12 @@ func NewBlockMeta(block *Block, blockParts *PartSet) *BlockMeta {
 		BlockSize: block.Size(),
 		Header:    block.Header,
 		NumTxs:    len(block.Data.Txs),
-		DAHeader:  block.DataAvailabilityHeader,
 	}
 }
 
-func (bm *BlockMeta) ToProto() (*tmproto.BlockMeta, error) {
+func (bm *BlockMeta) ToProto() *tmproto.BlockMeta {
 	if bm == nil {
-		return nil, nil
-	}
-
-	protoDAH, err := bm.DAHeader.ToProto()
-	if err != nil {
-		return nil, err
+		return nil
 	}
 
 	pb := &tmproto.BlockMeta{
@@ -43,9 +36,8 @@ func (bm *BlockMeta) ToProto() (*tmproto.BlockMeta, error) {
 		BlockSize: int64(bm.BlockSize),
 		Header:    *bm.Header.ToProto(),
 		NumTxs:    int64(bm.NumTxs),
-		DaHeader:  protoDAH,
 	}
-	return pb, nil
+	return pb
 }
 
 func BlockMetaFromProto(pb *tmproto.BlockMeta) (*BlockMeta, error) {
@@ -65,16 +57,10 @@ func BlockMetaFromProto(pb *tmproto.BlockMeta) (*BlockMeta, error) {
 		return nil, err
 	}
 
-	dah, err := DataAvailabilityHeaderFromProto(pb.DaHeader)
-	if err != nil {
-		return nil, err
-	}
-
 	bm.BlockID = *bi
 	bm.BlockSize = int(pb.BlockSize)
 	bm.Header = h
 	bm.NumTxs = int(pb.NumTxs)
-	bm.DAHeader = *dah
 
 	return bm, bm.ValidateBasic()
 }

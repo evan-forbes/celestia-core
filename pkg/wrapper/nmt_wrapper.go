@@ -6,7 +6,7 @@ import (
 	"github.com/celestiaorg/nmt"
 	"github.com/celestiaorg/rsmt2d"
 
-	"github.com/celestiaorg/celestia-core/pkg/consts"
+	"github.com/tendermint/tendermint/pkg/consts"
 )
 
 // Fulfills the rsmt2d.Tree interface and rsmt2d.TreeConstructorFn function
@@ -31,7 +31,7 @@ func NewErasuredNamespacedMerkleTree(squareSize uint64, setters ...nmt.Option) E
 	if squareSize == 0 {
 		panic("cannot create a ErasuredNamespacedMerkleTree of squareSize == 0")
 	}
-	tree := nmt.New(consts.NewBaseHashFunc, setters...)
+	tree := nmt.New(consts.NewBaseHashFunc(), setters...)
 	return ErasuredNamespacedMerkleTree{squareSize: squareSize, options: setters, tree: tree}
 }
 
@@ -70,5 +70,5 @@ func (w *ErasuredNamespacedMerkleTree) Push(data []byte, idx rsmt2d.SquareIndex)
 // Root fulfills the rsmt.Tree interface by generating and returning the
 // underlying NamespaceMerkleTree Root.
 func (w *ErasuredNamespacedMerkleTree) Root() []byte {
-	return w.tree.Root().Bytes()
+	return w.tree.Root()
 }

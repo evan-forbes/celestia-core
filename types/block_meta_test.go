@@ -5,21 +5,19 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/celestiaorg/celestia-core/crypto/tmhash"
-	tmrand "github.com/celestiaorg/celestia-core/libs/rand"
+	"github.com/tendermint/tendermint/crypto/tmhash"
+	tmrand "github.com/tendermint/tendermint/libs/rand"
 )
 
 func TestBlockMeta_ToProto(t *testing.T) {
-	h := makeRandHeader()
+	h := MakeRandHeader()
 	bi := BlockID{Hash: h.Hash(), PartSetHeader: PartSetHeader{Total: 123, Hash: tmrand.Bytes(tmhash.Size)}}
-	dah := makeDAHeaderRandom()
 
 	bm := &BlockMeta{
 		BlockID:   bi,
 		BlockSize: 200,
 		Header:    h,
 		NumTxs:    0,
-		DAHeader:  *dah,
 	}
 
 	tests := []struct {
@@ -34,8 +32,7 @@ func TestBlockMeta_ToProto(t *testing.T) {
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.testName, func(t *testing.T) {
-			pb, err := tt.bm.ToProto()
-			require.NoError(t, err)
+			pb := tt.bm.ToProto()
 
 			bm, err := BlockMetaFromProto(pb)
 
@@ -50,7 +47,7 @@ func TestBlockMeta_ToProto(t *testing.T) {
 }
 
 func TestBlockMeta_ValidateBasic(t *testing.T) {
-	h := makeRandHeader()
+	h := MakeRandHeader()
 	bi := BlockID{Hash: h.Hash(), PartSetHeader: PartSetHeader{Total: 123, Hash: tmrand.Bytes(tmhash.Size)}}
 	bi2 := BlockID{Hash: tmrand.Bytes(tmhash.Size),
 		PartSetHeader: PartSetHeader{Total: 123, Hash: tmrand.Bytes(tmhash.Size)}}
