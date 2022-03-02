@@ -9,7 +9,7 @@ jobs:
   pull-from-upstream:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Reset the default branch with upstream changes
         run: |
           git remote add upstream https://github.com/tendermint/tendermint.git
